@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiniela Velada VI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+
+<!-- ============================================================ -->
+<!-- FIREBASE SDK (versión "compat", no requiere build tools)      -->
+<!-- ============================================================ -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+
+<style>
+  :root{
+    --canvas:#121014;
+    --panel:#1C181A;
+    --panel-2:#242023;
+    --rope-red:#D3352E;
+    --rope-red-deep:#8F1F1B;
+    --gold:#E8B84F;
+    --gold-dim:#7A6733;
+    --cream:#F3ECDD;
+    --muted:#9B9298;
+    --corner-blue:#3E6FA8;
+    --green:#7CD98A;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;}
+  .qv-app{
+    background:
+      radial-gradient(circle at 15% 0%, rgba(211,53,46,0.16), transparent 45%),
+      radial-gradient(circle at 90% 10%, rgba(232,184,79,0.10), transparent 40%),
+      var(--canvas);
+    color:var(--cream);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    padding:28px 16px 60px;
+  }
+  .qv-wrap{max-width:640px;margin:0 auto;}
+
+  .qv-header{text-align:center;margin-bottom:24px;}
+  .qv-eyebrow{font-family:'Oswald',sans-serif;letter-spacing:.35em;font-size:11px;color:var(--gold);text-transform:uppercase;margin-bottom:10px;}
+  .qv-title{font-family:'Anton',sans-serif;font-size:clamp(34px,9vw,54px);line-height:.95;margin:0;color:var(--cream);text-shadow:0 0 24px rgba(211,53,46,.35);}
+  .qv-title span{color:var(--rope-red);}
+  .qv-sub{font-family:'Oswald',sans-serif;font-size:13px;color:var(--muted);margin-top:8px;letter-spacing:.04em;}
+  .qv-rope{height:3px;margin:18px auto 0;max-width:320px;background:repeating-linear-gradient(90deg,var(--rope-red) 0 14px, var(--gold) 14px 16px, transparent 16px 22px);opacity:.8;}
+
+  .qv-gate{background:var(--panel);border:1px solid rgba(232,184,79,0.18);border-radius:14px;padding:20px;margin-bottom:20px;}
+  .qv-gate label{display:block;font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);margin-bottom:8px;}
+  .qv-row{display:flex;gap:10px;flex-wrap:wrap;}
+  .qv-input{flex:1 1 180px;background:var(--panel-2);border:1px solid rgba(255,255,255,0.08);color:var(--cream);padding:12px 14px;border-radius:9px;font-size:15px;font-family:'Inter',sans-serif;outline:none;}
+  .qv-input:focus{border-color:var(--gold);}
+  .qv-btn{font-family:'Oswald',sans-serif;letter-spacing:.06em;text-transform:uppercase;font-size:13px;font-weight:600;border:none;border-radius:9px;padding:12px 20px;cursor:pointer;transition:transform .12s ease, filter .12s ease;}
+  .qv-btn:active{transform:scale(.97);}
+  .qv-btn-primary{background:linear-gradient(180deg,var(--rope-red),var(--rope-red-deep));color:#fff;}
+  .qv-btn-primary:hover{filter:brightness(1.08);}
+  .qv-btn-gold{background:linear-gradient(180deg,var(--gold),#C9973C);color:#241C0C;}
+  .qv-btn-ghost{background:transparent;border:1px solid rgba(255,255,255,0.15);color:var(--muted);}
+  .qv-btn:disabled{opacity:.4;cursor:not-allowed;}
+
+  .qv-mult-pool{background:var(--panel);border:1px solid rgba(232,184,79,0.18);border-radius:14px;padding:16px;margin-bottom:20px;}
+  .qv-mult-pool-title{font-family:'Oswald',sans-serif;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-bottom:4px;}
+  .qv-mult-pool-hint{font-size:12px;color:var(--muted);margin-bottom:10px;}
+  .qv-chip-row{display:flex;gap:8px;flex-wrap:wrap;}
+  .qv-chip{font-family:'Anton',sans-serif;font-size:15px;width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:1.5px solid rgba(232,184,79,0.4);color:var(--gold);background:var(--panel-2);}
+  .qv-chip.used{opacity:.25;border-style:dashed;}
+
+  .qv-section-title{font-family:'Oswald',sans-serif;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:26px 0 12px;display:flex;align-items:center;gap:10px;}
+  .qv-section-title::after{content:"";flex:1;height:1px;background:rgba(255,255,255,0.08);}
+
+  .qv-fight{background:var(--panel);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:14px;margin-bottom:12px;position:relative;overflow:hidden;}
+  .qv-fight.is-main{border-color:rgba(232,184,79,0.4);}
+  .qv-fight-tag{position:absolute;top:10px;right:14px;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);opacity:.85;text-align:right;}
+  .qv-fight-tag .qv-double{display:block;font-size:9px;color:var(--rope-red);opacity:1;margin-top:2px;}
+  .qv-fight-num{font-family:'Anton',sans-serif;font-size:12px;color:var(--muted);letter-spacing:.08em;margin-bottom:8px;}
+  .qv-corners{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:8px;}
+  .qv-corner{border:1px solid rgba(255,255,255,0.10);background:var(--panel-2);border-radius:10px;padding:10px 8px;text-align:center;cursor:pointer;transition:border-color .15s ease, background .15s ease, transform .1s ease;}
+  .qv-corner:hover{border-color:rgba(232,184,79,0.4);}
+  .qv-corner:active{transform:scale(.98);}
+  .qv-corner.picked-red{border-color:var(--rope-red);background:linear-gradient(180deg, rgba(211,53,46,0.22), rgba(211,53,46,0.06));}
+  .qv-corner.picked-blue{border-color:var(--corner-blue);background:linear-gradient(180deg, rgba(62,111,168,0.25), rgba(62,111,168,0.06));}
+  .qv-avatar{width:44px;height:44px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-family:'Anton',sans-serif;font-size:15px;color:#fff;position:relative;}
+  .qv-avatar-a{background:linear-gradient(150deg,#E1584F,#8F1F1B);}
+  .qv-avatar-b{background:linear-gradient(150deg,#5A93D6,#22456E);}
+  .qv-avatar-flag{position:absolute;bottom:-3px;right:-3px;font-size:13px;background:var(--panel-2);border-radius:50%;padding:1px;}
+  .qv-fighter-name{font-family:'Anton',sans-serif;font-size:14px;letter-spacing:.01em;color:var(--cream);}
+  .qv-vs{font-family:'Anton',sans-serif;font-size:14px;color:var(--muted);}
+  .qv-mult-row{display:flex;justify-content:center;gap:6px;margin-top:12px;}
+  .qv-mult-btn{font-family:'Oswald',sans-serif;font-weight:600;font-size:11px;border-radius:20px;padding:5px 10px;border:1px solid rgba(255,255,255,0.12);background:var(--panel-2);color:var(--muted);cursor:pointer;}
+  .qv-mult-btn.active{background:linear-gradient(180deg,var(--gold),#C9973C);color:#241C0C;border-color:transparent;}
+  .qv-mult-btn.locked{opacity:.3;cursor:not-allowed;}
+
+  .qv-submitbar{position:sticky;bottom:12px;display:flex;justify-content:center;margin-top:20px;z-index:5;}
+  .qv-submitbar .qv-btn{padding:14px 30px;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.5);}
+  .qv-progress{font-family:'Oswald',sans-serif;font-size:12px;color:var(--muted);text-align:center;margin-top:8px;}
+
+  .qv-confirm{background:var(--panel);border:1px solid rgba(232,184,79,0.3);border-radius:14px;padding:20px;text-align:center;margin-bottom:24px;}
+  .qv-confirm-title{font-family:'Anton',sans-serif;font-size:22px;color:var(--gold);margin-bottom:6px;}
+  .qv-confirm p{color:var(--muted);font-size:13px;margin:4px 0 14px;}
+
+  .qv-admin-toggle{text-align:center;margin-top:34px;}
+  .qv-admin-toggle a{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-decoration:underline;cursor:pointer;}
+
+  .qv-pin-box{background:var(--panel);border:1px dashed rgba(232,184,79,0.35);border-radius:14px;padding:18px;margin-top:16px;text-align:center;}
+  .qv-pin-box input{max-width:140px;text-align:center;letter-spacing:.3em;}
+
+  .qv-admin-panel{margin-top:16px;background:var(--panel);border:1px dashed rgba(232,184,79,0.35);border-radius:14px;padding:16px;}
+  .qv-admin-panel .qv-fight{background:var(--panel-2);}
+  .qv-tag-result{display:inline-block;font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--green);background:rgba(124,217,138,0.12);border:1px solid rgba(124,217,138,0.3);padding:2px 8px;border-radius:20px;margin-left:8px;}
+
+  .qv-board{background:var(--panel);border:1px solid rgba(255,255,255,0.07);border-radius:14px;overflow:hidden;}
+  .qv-board-row{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.06);}
+  .qv-board-row:last-child{border-bottom:none;}
+  .qv-board-rank{font-family:'Anton',sans-serif;font-size:18px;color:var(--muted);width:26px;text-align:center;}
+  .qv-board-row:nth-child(1) .qv-board-rank{color:var(--gold);}
+  .qv-board-name{font-family:'Oswald',sans-serif;font-weight:600;flex:1;}
+  .qv-board-score{font-family:'Anton',sans-serif;color:var(--rope-red);font-size:16px;}
+  .qv-empty{text-align:center;color:var(--muted);font-size:13px;padding:20px;}
+
+  .qv-toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--gold);color:#241C0C;font-family:'Oswald',sans-serif;font-weight:600;font-size:13px;padding:10px 18px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.4);z-index:50;}
+  .qv-loading{text-align:center;color:var(--muted);font-family:'Oswald',sans-serif;font-size:13px;padding:30px 0;}
+  .qv-private-note{font-size:11px;color:var(--muted);text-align:center;margin-top:6px;}
+</style>
+</head>
+<body>
+
+<div class="qv-app" id="qv-root">
+  <div class="qv-wrap">
+    <div class="qv-header">
+      <div class="qv-eyebrow">Estadio La Cartuja · Sevilla · 25 Jul 2026</div>
+      <h1 class="qv-title">QUINIELA<br><span>VELADA VI</span></h1>
+      <div class="qv-sub">10 combates. Elige ganador y reparte tus multiplicadores de confianza (opcional).</div>
+      <div class="qv-rope"></div>
+    </div>
+    <div id="qv-content"><div class="qv-loading">Preparando el ring…</div></div>
+  </div>
+</div>
+
+<script>
+(function(){
+
+  const firebaseConfig = {
+  apiKey: "AIzaSyDITUPuuGTpD6ZVIhvp8CDWIu0pqXGPcbE",
+  authDomain: "quiniela-velada.firebaseapp.com",
+  databaseURL: "https://quiniela-velada-default-rtdb.firebaseio.com",
+  projectId: "quiniela-velada",
+  storageBucket: "quiniela-velada.firebasestorage.app",
+  messagingSenderId: "549189192955",
+  appId: "1:549189192955:web:bbc3e65e0f1ee6666e745e",
+  measurementId: "G-3BX791RC9R"
+};
+
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
+
+  // Estructura en Realtime Database:
+  //   /picks/{nombre_normalizado}  -> {name, picks, ts}
+  //   /results                     -> {fightId: 'a'|'b'}
+
+  const ADMIN_PIN = "IBAI26"; // cámbialo antes de compartir la página
+
+  const FIGHTS = [
+    {id:1, tag:"", a:{name:"Edu Aguirre", flag:"🇪🇸"}, b:{name:"Gastón Edul", flag:"🇦🇷"}},
+    {id:2, tag:"", a:{name:"Fabiana Sevillano", flag:"🇪🇸"}, b:{name:"La Parce", flag:"🇨🇴"}},
+    {id:3, tag:"", a:{name:"Clersss", flag:"🇪🇸"}, b:{name:"Natalia MX", flag:"🇲🇽"}},
+    {id:4, tag:"", a:{name:"Lit Killah", flag:"🇦🇷"}, b:{name:"Kidd Keo", flag:"🇪🇸"}},
+    {id:5, tag:"", a:{name:"Alondrissa", flag:"🇵🇷"}, b:{name:"Angie Velasco", flag:"🇦🇷"}},
+    {id:6, tag:"", a:{name:"ViruZz", flag:"🇪🇸"}, b:{name:"Gero Arias", flag:"🇦🇷"}},
+    {id:7, tag:"", a:{name:"Samy Rivers", flag:"🇲🇽"}, b:{name:"RoRo", flag:"🇪🇸"}},
+    {id:8, tag:"", a:{name:"Marta Díaz", flag:"🇪🇸"}, b:{name:"Tatiana Käer", flag:"🇪🇸"}},
+    {id:9, tag:"Co-estelar", a:{name:"YoSoyPlex", flag:"🇪🇸"}, b:{name:"Fernanfloo", flag:"🇸🇻"}, main:true},
+    {id:10, tag:"Main Event", a:{name:"IlloJuan", flag:"🇪🇸"}, b:{name:"TheGrefg", flag:"🇪🇸"}, main:true}
+  ];
+  const MULT_TOKENS = [2,3,4,5]; // cada valor se puede usar una sola vez, y son OPCIONALES: puedes usar 0, 1, 2, 3 o los 4
+  const BASE_POINTS = (f) => f.main ? 2 : 1;
+
+  function initials(name){
+    return name.split(/\s+/).map(w=>w[0]).slice(0,2).join('').toUpperCase();
+  }
+
+  const content = document.getElementById('qv-content');
+  let state = {
+    name: '',
+    picks: {},
+    submitted: false,
+    adminOpen: false,
+    adminUnlocked: false,
+    pinInput: '',
+    adminResults: {},
+    resultsSaved: {},
+    toast: null
+  };
+
+  function toast(msg){
+    state.toast = msg;
+    render();
+    setTimeout(()=>{ state.toast = null; render(); }, 2200);
+  }
+
+  // ---------- Firestore helpers ----------
+
+  async function loadResults(){
+    try{
+      const snap = await db.ref('results').get();
+      return snap.exists() ? snap.val() : {};
+    }catch(e){
+      console.error(e);
+      return {};
+    }
+  }
+
+  async function loadAllSubmissions(){
+    try{
+      const snap = await db.ref('picks').get();
+      if(!snap.exists()) return [];
+      const val = snap.val();
+      return Object.keys(val).map(k => val[k]);
+    }catch(e){
+      console.error(e);
+      return [];
+    }
+  }
+
+  function scoreFor(submission, results){
+    let score = 0;
+    FIGHTS.forEach(f=>{
+      const actual = results[f.id];
+      const pickObj = submission.picks[f.id];
+      if(actual && pickObj && pickObj.corner === actual){
+        score += BASE_POINTS(f) * (pickObj.mult || 1);
+      }
+    });
+    return score;
+  }
+
+  function usedMultipliers(excludeFightId){
+    const used = new Set();
+    Object.keys(state.picks).forEach(fid=>{
+      if(parseInt(fid) === excludeFightId) return;
+      const m = state.picks[fid].mult;
+      if(m && m > 1) used.add(m);
+    });
+    return used;
+  }
+
+  function pick(fightId, corner){
+    if(state.submitted) return;
+    const existing = state.picks[fightId] || {mult:1};
+    state.picks[fightId] = {corner, mult: existing.mult || 1};
+    render();
+  }
+
+  function setMult(fightId, val){
+    if(state.submitted) return;
+    const p = state.picks[fightId];
+    if(!p || !p.corner) { toast('Primero elige ganador en esa pelea'); return; }
+    if(p.mult === val){ p.mult = 1; render(); return; } // click de nuevo lo quita (vuelve a x1, libre)
+    const used = usedMultipliers(fightId);
+    if(used.has(val)){ toast('Ese multiplicador ya está en uso'); return; }
+    p.mult = val;
+    render();
+  }
+
+  function adminPick(fightId, corner){
+    state.adminResults[fightId] = corner;
+    render();
+  }
+
+  async function submitPicks(){
+    if(!state.name.trim()){ toast('Escribe tu nombre primero'); return; }
+    // Los multiplicadores son libres: NO se exige usarlos todos, solo se exige elegir ganador en las 10 peleas.
+    if(Object.keys(state.picks).length < FIGHTS.length || FIGHTS.some(f=>!state.picks[f.id] || !state.picks[f.id].corner)){
+      toast('Faltan combates por elegir'); return;
+    }
+    try{
+      const key = state.name.trim().toLowerCase().replace(/\s+/g,'_');
+      const payload = {name: state.name.trim(), picks: state.picks, ts: Date.now()};
+      await db.ref('picks/' + key).set(payload);
+      state.submitted = true;
+      render();
+      toast('¡Picks guardados!');
+    }catch(e){
+      console.error(e);
+      toast('Error guardando tus picks');
+    }
+  }
+
+  async function saveResults(){
+    try{
+      await db.ref('results').set(state.adminResults);
+      state.resultsSaved = Object.assign({}, state.adminResults);
+      render();
+      toast('Resultados actualizados');
+    }catch(e){
+      console.error(e);
+      toast('Error guardando resultados');
+    }
+  }
+
+  function tryUnlock(){
+    if(state.pinInput === ADMIN_PIN){
+      state.adminUnlocked = true;
+      state.pinInput = '';
+      loadAdminData();
+    } else {
+      toast('PIN incorrecto');
+      state.pinInput = '';
+      render();
+    }
+  }
+
+  let adminSubmissions = [];
+  async function loadAdminData(){
+    render();
+    adminSubmissions = await loadAllSubmissions();
+    state.resultsSaved = await loadResults();
+    state.adminResults = Object.assign({}, state.resultsSaved);
+    render();
+  }
+
+  function downloadCSV(){
+    const results = state.resultsSaved;
+    const headers = ['Nombre'];
+    FIGHTS.forEach(f=> headers.push(`C${f.id} Pick`, `C${f.id} Mult`));
+    headers.push('Puntaje total');
+    const rows = [headers];
+    adminSubmissions.forEach(sub=>{
+      const row = [sub.name];
+      FIGHTS.forEach(f=>{
+        const p = sub.picks[f.id];
+        const fighterName = p ? (p.corner==='a' ? f.a.name : f.b.name) : '';
+        row.push(fighterName, p ? (p.mult||1) : '');
+      });
+      row.push(scoreFor(sub, results));
+      rows.push(row);
+    });
+    const csv = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob(["\uFEFF" + csv], {type:'text/csv;charset=utf-8;'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'quiniela_velada_vi.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function avatar(fighter, side){
+    return `<div class="qv-avatar qv-avatar-${side}">${initials(fighter.name)}<span class="qv-avatar-flag">${fighter.flag}</span></div>`;
+  }
+
+  function fightCard(f, mode){
+    const isAdmin = mode === 'admin';
+    const pickObj = isAdmin ? {corner: state.adminResults[f.id]} : state.picks[f.id];
+    const currentCorner = pickObj ? pickObj.corner : null;
+    const currentMult = (!isAdmin && pickObj) ? (pickObj.mult || 1) : 1;
+    const resultVal = state.resultsSaved ? state.resultsSaved[f.id] : null;
+    const used = isAdmin ? new Set() : usedMultipliers(f.id);
+
+    let multRow = '';
+    if(!isAdmin){
+      multRow = `<div class="qv-mult-row">` + MULT_TOKENS.map(v=>{
+        const active = currentMult === v;
+        const locked = !active && used.has(v);
+        return `<button class="qv-mult-btn ${active?'active':''} ${locked?'locked':''}" data-mult-fight="${f.id}" data-mult-val="${v}" ${locked?'disabled':''}>x${v}</button>`;
+      }).join('') + `</div>`;
+    }
+
+    return `
+      <div class="qv-fight ${f.main ? 'is-main':''}">
+        ${f.tag ? `<div class="qv-fight-tag">${f.tag}${f.main ? '<span class="qv-double">vale doble</span>' : ''}</div>` : ''}
+        <div class="qv-fight-num">COMBATE ${String(f.id).padStart(2,'0')} ${resultVal && isAdmin ? `<span class="qv-tag-result">Guardado: ${resultVal==='a'?f.a.name:f.b.name}</span>` : ''}</div>
+        <div class="qv-corners">
+          <div class="qv-corner ${currentCorner==='a' ? 'picked-red':''}" data-fight="${f.id}" data-corner="a" data-mode="${mode}">
+            ${avatar(f.a,'a')}
+            <div class="qv-fighter-name">${f.a.name}</div>
+          </div>
+          <div class="qv-vs">VS</div>
+          <div class="qv-corner ${currentCorner==='b' ? 'picked-blue':''}" data-fight="${f.id}" data-corner="b" data-mode="${mode}">
+            ${avatar(f.b,'b')}
+            <div class="qv-fighter-name">${f.b.name}</div>
+          </div>
+        </div>
+        ${multRow}
+      </div>
+    `;
+  }
+
+  function leaderboardHtml(){
+    if(adminSubmissions.length === 0){
+      return `<div class="qv-empty">Todavía nadie ha enviado su quiniela.</div>`;
+    }
+    const rows = adminSubmissions.map(s => ({name: s.name, score: scoreFor(s, state.resultsSaved)}));
+    rows.sort((a,b)=> b.score - a.score);
+    const medals = ['🥇','🥈','🥉'];
+    return rows.map((row,i)=>`
+      <div class="qv-board-row">
+        <div class="qv-board-rank">${medals[i] || (i+1)}</div>
+        <div class="qv-board-name">${row.name}</div>
+        <div class="qv-board-score">${row.score} pt${row.score===1?'':'s'}</div>
+      </div>
+    `).join('');
+  }
+
+  function render(){
+    const pickedCount = Object.values(state.picks).filter(p=>p && p.corner).length;
+    let html = '';
+
+    if(!state.submitted){
+      html += `
+        <div class="qv-gate">
+          <label for="qv-name">Tu nombre</label>
+          <div class="qv-row">
+            <input id="qv-name" class="qv-input" type="text" placeholder="Ej. Marcos" value="${state.name.replace(/"/g,'&quot;')}" />
+          </div>
+        </div>
+        <div class="qv-mult-pool">
+          <div class="qv-mult-pool-title">Tus multiplicadores de confianza (opcionales)</div>
+          <div class="qv-mult-pool-hint">Cada valor se puede usar una sola vez, y no estás obligado a usarlos todos. Úsalos en las peleas que consideres más seguras. El main event y el co-estelar ya valen doble de base, así que si les pones multiplicador ahí vale aún más. Si no usas ninguno, cada combate vale solo su puntaje base.</div>
+          <div class="qv-chip-row">
+            ${MULT_TOKENS.map(v=>{
+              const inUse = usedMultipliers(-1).has(v);
+              return `<div class="qv-chip ${inUse?'used':''}">x${v}</div>`;
+            }).join('')}
+          </div>
+        </div>
+        <div class="qv-section-title">Elige a tus ganadores</div>
+      `;
+      FIGHTS.forEach(f=>{ html += fightCard(f, 'pick'); });
+      html += `
+        <div class="qv-submitbar">
+          <button class="qv-btn qv-btn-primary" id="qv-submit-btn" ${pickedCount < FIGHTS.length ? 'disabled' : ''}>Enviar mi quiniela</button>
+        </div>
+        <div class="qv-progress">${pickedCount}/${FIGHTS.length} combates elegidos</div>
+      `;
+    } else {
+      html += `
+        <div class="qv-confirm">
+          <div class="qv-confirm-title">¡Ya estás en el ring, ${state.name}!</div>
+          <p>Tu quiniela quedó guardada. Solo el organizador puede verla junto con la del resto.</p>
+        </div>
+      `;
+    }
+
+    html += `<div class="qv-admin-toggle"><a id="qv-admin-link">${state.adminOpen ? 'Ocultar panel de organizador' : 'Soy el organizador'}</a></div>`;
+
+    if(state.adminOpen && !state.adminUnlocked){
+      html += `
+        <div class="qv-pin-box">
+          <div class="qv-mult-pool-title" style="margin-bottom:10px;">Ingresa el PIN de organizador</div>
+          <input id="qv-pin-input" class="qv-input" type="password" maxlength="12" value="${state.pinInput}" />
+          <div style="margin-top:10px;"><button class="qv-btn qv-btn-gold" id="qv-pin-btn">Entrar</button></div>
+        </div>
+      `;
+    }
+
+    if(state.adminOpen && state.adminUnlocked){
+      html += `<div class="qv-admin-panel">
+        <div class="qv-section-title" style="margin-top:0;">Marca quién ganó cada combate</div>
+      `;
+      FIGHTS.forEach(f=>{ html += fightCard(f, 'admin'); });
+      html += `
+        <div class="qv-submitbar" style="position:static;margin-top:14px;">
+          <button class="qv-btn qv-btn-gold" id="qv-save-results-btn">Guardar resultados</button>
+        </div>
+      </div>`;
+
+      html += `<div class="qv-section-title">Marcador (solo tú lo ves)</div>`;
+      html += `<div class="qv-board">${leaderboardHtml()}</div>`;
+      html += `
+        <div class="qv-submitbar" style="position:static;margin-top:14px;">
+          <button class="qv-btn qv-btn-ghost" id="qv-export-btn" ${adminSubmissions.length===0?'disabled':''}>Descargar en Excel (CSV)</button>
+        </div>
+        <div class="qv-private-note">Se abre perfecto en Excel, Google Sheets o Numbers.</div>
+      `;
+    }
+
+    if(state.toast){
+      html += `<div class="qv-toast">${state.toast}</div>`;
+    }
+
+    content.innerHTML = html;
+
+    const nameInput = document.getElementById('qv-name');
+    if(nameInput){ nameInput.addEventListener('input', (e)=>{ state.name = e.target.value; }); }
+
+    content.querySelectorAll('.qv-corner').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const fightId = parseInt(el.getAttribute('data-fight'));
+        const corner = el.getAttribute('data-corner');
+        const mode = el.getAttribute('data-mode');
+        if(mode === 'admin'){ adminPick(fightId, corner); }
+        else { pick(fightId, corner); }
+      });
+    });
+
+    content.querySelectorAll('.qv-mult-btn').forEach(el=>{
+      el.addEventListener('click', ()=>{
+        const fightId = parseInt(el.getAttribute('data-mult-fight'));
+        const val = parseInt(el.getAttribute('data-mult-val'));
+        setMult(fightId, val);
+      });
+    });
+
+    const submitBtn = document.getElementById('qv-submit-btn');
+    if(submitBtn){ submitBtn.addEventListener('click', submitPicks); }
+
+    const adminLink = document.getElementById('qv-admin-link');
+    if(adminLink){ adminLink.addEventListener('click', ()=>{ state.adminOpen = !state.adminOpen; render(); }); }
+
+    const pinInput = document.getElementById('qv-pin-input');
+    if(pinInput){ pinInput.addEventListener('input', (e)=>{ state.pinInput = e.target.value; }); }
+    const pinBtn = document.getElementById('qv-pin-btn');
+    if(pinBtn){ pinBtn.addEventListener('click', tryUnlock); }
+
+    const saveResultsBtn = document.getElementById('qv-save-results-btn');
+    if(saveResultsBtn){ saveResultsBtn.addEventListener('click', saveResults); }
+
+    const exportBtn = document.getElementById('qv-export-btn');
+    if(exportBtn){ exportBtn.addEventListener('click', downloadCSV); }
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>

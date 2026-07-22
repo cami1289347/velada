@@ -142,16 +142,16 @@
 <script>
 (function(){
 
+
   const firebaseConfig = {
-  apiKey: "AIzaSyDITUPuuGTpD6ZVIhvp8CDWIu0pqXGPcbE",
-  authDomain: "quiniela-velada.firebaseapp.com",
-  databaseURL: "https://quiniela-velada-default-rtdb.firebaseio.com",
-  projectId: "quiniela-velada",
-  storageBucket: "quiniela-velada.firebasestorage.app",
-  messagingSenderId: "549189192955",
-  appId: "1:549189192955:web:bbc3e65e0f1ee6666e745e",
-  measurementId: "G-3BX791RC9R"
-};
+    apiKey: "AIzaSyDITUPuuGTpD6ZVIhvp8CDWIu0pqXGPcbE",
+    authDomain: "TU_PROYECTO.firebaseapp.com",
+    databaseURL: "https://quiniela-velada-default-rtdb.firebaseio.com",
+    projectId: "quiniela-velada",
+    storageBucket: "quiniela-velada.firebasestorage.app",
+    messagingSenderId: "549189192955",
+    appId: "1:549189192955:web:bbc3e65e0f1ee6666e745e"
+  };
 
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();

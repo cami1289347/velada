@@ -7,9 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
 
-<!-- ============================================================ -->
-<!-- FIREBASE SDK (versión "compat", no requiere build tools)      -->
-<!-- ============================================================ -->
+
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 
@@ -169,9 +167,9 @@
     {id:4, tag:"", a:{name:"Lit Killah", flag:"🇦🇷"}, b:{name:"Kidd Keo", flag:"🇪🇸"}},
     {id:5, tag:"", a:{name:"Alondrissa", flag:"🇵🇷"}, b:{name:"Angie Velasco", flag:"🇦🇷"}},
     {id:6, tag:"", a:{name:"ViruZz", flag:"🇪🇸"}, b:{name:"Gero Arias", flag:"🇦🇷"}},
-    {id:7, tag:"", a:{name:"Samy Rivers", flag:"🇲🇽"}, b:{name:"RoRo", flag:"🇪🇸"}},
+    {id:7, tag:"", a:{name:"YoSoyPlex", flag:"🇪🇸"}, b:{name:"Fernanfloo", flag:"🇸🇻"}}},
     {id:8, tag:"", a:{name:"Marta Díaz", flag:"🇪🇸"}, b:{name:"Tatiana Käer", flag:"🇪🇸"}},
-    {id:9, tag:"Co-estelar", a:{name:"YoSoyPlex", flag:"🇪🇸"}, b:{name:"Fernanfloo", flag:"🇸🇻"}, main:true},
+    {id:9, tag:"Co-estelar", a:{name:"Samy Rivers", flag:"🇲🇽"}, b:{name:"RoRo", flag:"🇪🇸", main:true},
     {id:10, tag:"Main Event", a:{name:"IlloJuan", flag:"🇪🇸"}, b:{name:"TheGrefg", flag:"🇪🇸"}, main:true}
   ];
   const MULT_TOKENS = [2,3,4,5]; // cada valor se puede usar una sola vez, y son OPCIONALES: puedes usar 0, 1, 2, 3 o los 4
@@ -199,8 +197,6 @@
     render();
     setTimeout(()=>{ state.toast = null; render(); }, 2200);
   }
-
-  // ---------- Firestore helpers ----------
 
   async function loadResults(){
     try{
@@ -441,7 +437,7 @@
       html += `
         <div class="qv-confirm">
           <div class="qv-confirm-title">¡Ya estás en el ring, ${state.name}!</div>
-          <p>Tu quiniela quedó guardada. Solo el organizador puede verla junto con la del resto.</p>
+          <p>Tu quiniela quedó guardada. Solo yo puedo verla junto con la del resto.</p>
         </div>
       `;
     }
@@ -475,7 +471,6 @@
         <div class="qv-submitbar" style="position:static;margin-top:14px;">
           <button class="qv-btn qv-btn-ghost" id="qv-export-btn" ${adminSubmissions.length===0?'disabled':''}>Descargar en Excel (CSV)</button>
         </div>
-        <div class="qv-private-note">Se abre perfecto en Excel, Google Sheets o Numbers.</div>
       `;
     }
 
